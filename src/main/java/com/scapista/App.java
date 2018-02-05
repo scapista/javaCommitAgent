@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.javaparser.ParseException;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -22,18 +23,20 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import java.io.ByteArrayOutputStream;
+import com.scapista.MethodParser.*;
 
 import static java.lang.System.out;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 
-    public class App {
 
-        public static void main(String[] args) throws IOException, GitAPIException {
+public class App {
+
+        public static void main(String[] args) throws IOException, GitAPIException,ParseException {
             try (Repository repository = openJGitCookbookRepository()) {
                 String oldCommitString = null;
                 String newCommitString = null;
-
+                MethodParser mp = new MethodParser();
 
                 for(PlotCommit str: getCommits(repository)){
                     if(oldCommitString == null) oldCommitString = str.getName();
@@ -46,10 +49,16 @@ import static org.eclipse.jgit.lib.Constants.HEAD;
                         prepareTreeParser(repository, newCommitString))
                         ){
                     for (String innStr : str.split("\n")) {
-                        if (innStr.startsWith("-->"))
-                            out.println(innStr);
-                        else if (innStr.contains("@@"))
-                            out.println(innStr);
+                        if (innStr.startsWith("-->")){
+                            String tmpDir = repository.getDirectory().toString();
+                            mp.setDirName(tmpDir.substring(0,tmpDir.indexOf(".git")));
+                            System.out.println(innStr.substring(3));
+                            mp.setFileName(innStr.substring(3));
+                        }
+                        else if (innStr.startsWith("@@")){
+                            //out.println(innStr);
+                            mp.printMethod(Integer.parseInt(innStr.substring(4,innStr.indexOf(','))));
+                        }
                     }
                 }
             }
@@ -75,7 +84,7 @@ import static org.eclipse.jgit.lib.Constants.HEAD;
                         //setPathFilter(PathFilter.create("README.md")).
                         // to filter on Suffix use the following instead
                         //setPathFilter(PathSuffixFilter.create(".java"))
-                                call();
+                        call();
                 ArrayList<String> diffList = new ArrayList<>();
                 for (DiffEntry entry : diff) {
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
